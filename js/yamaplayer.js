@@ -1,18 +1,20 @@
 'use strict';
 
 // ===== YamaPlayer形式JSONとの相互変換 =====
-// 形式はYamaPlayer(Editor/Playlist/PlaylistExporter.cs)の出力に準拠する
+// 形式はYamaPlayerが実際に出力するJSONに準拠する
 //   {
-//     "playlists": [
-//       {
-//         "active": true,
-//         "name": "再生リスト名",
-//         "tracks": [ { "playerType": 1, "title": "動画タイトル", "url": "動画URL" } ],
-//         "youtubeListId": ""
-//       }
-//     ]
+//       "playlists": [
+//           {
+//               "Active": true,
+//               "Name": "再生リスト名",
+//               "Tracks": [ { "Mode": 1, "Title": "動画タイトル", "Url": "動画URL" } ],
+//               "YoutubeListId": "",
+//               "IsEdit": false
+//           }
+//       ]
 //   }
-// playerType は YamaPlayer の VideoPlayerType 列挙型の数値
+// Mode は YamaPlayer の VideoPlayerType 列挙型の数値
+// (読み込み時は camelCase 形式(playerType / title / url など)も受け付ける)
 const YAMA_PLAYER_TYPE = {
   UnityVideoPlayer: 0,
   AVProVideoPlayer: 1,
@@ -28,18 +30,20 @@ function toYamaPlayerJson(playlists) {
   const data = {
     playlists: playlists.map((list) => ({
       // 読み込み時に保持した値があれば引き継ぎ、無ければ既定値にする
-      active: typeof list.active === 'boolean' ? list.active : true,
-      name: list.name,
-      tracks: list.items.map((item) => ({
-        playerType: Number.isInteger(item.playerType) ? item.playerType : YAMA_DEFAULT_PLAYER_TYPE,
-        title: item.title,
-        url: item.url,
+      Active: typeof list.active === 'boolean' ? list.active : true,
+      Name: list.name,
+      Tracks: list.items.map((item) => ({
+        Mode: Number.isInteger(item.playerType) ? item.playerType : YAMA_DEFAULT_PLAYER_TYPE,
+        Title: item.title,
+        Url: item.url,
       })),
-      youtubeListId: typeof list.youtubeListId === 'string' ? list.youtubeListId : '',
+      YoutubeListId: typeof list.youtubeListId === 'string' ? list.youtubeListId : '',
+      // YamaPlayerの編集画面用フラグ(常にfalseで出力する)
+      IsEdit: false,
     })),
   };
-  // YamaPlayerの出力(Newtonsoft.Json Indented)に合わせて2スペースで整形する
-  return JSON.stringify(data, null, 2);
+  // YamaPlayerの出力に合わせて4スペースで整形する
+  return JSON.stringify(data, null, 4);
 }
 
 // オブジェクトから、候補のキー名(camelCase / PascalCase など)の順に値を取り出す
@@ -67,7 +71,8 @@ function parseYamaPlayerJson(text, extractVideoId, watchUrl) {
   const playlists = rawLists
     .filter((p) => p && typeof p === 'object')
     .map((p) => {
-      const rawTracks = pickValue(p, ['tracks', 'Tracks']);
+      // 各キーは PascalCase(YamaPlayer実出力) と camelCase の両方を受け付ける(IsEditは読み捨て)
+      const rawTracks = pickValue(p, ['Tracks', 'tracks']);
       const items = [];
 
       (Array.isArray(rawTracks) ? rawTracks : []).forEach((t) => {
@@ -79,7 +84,7 @@ function parseYamaPlayerJson(text, extractVideoId, watchUrl) {
           return;
         }
         const title = String(pickValue(t, ['title', 'Title']) ?? '').trim();
-        const playerType = Number(pickValue(t, ['playerType', 'mode', 'Mode']));
+        const playerType = Number(pickValue(t, ['Mode', 'mode', 'playerType', 'PlayerType']));
         items.push({
           id,
           title: title || `動画 ${id}`,

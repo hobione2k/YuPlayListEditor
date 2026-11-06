@@ -110,6 +110,28 @@ body {
   color: var(--accent);
 }
 
+/* ===== フッター(パネル下部のリンク) ===== */
+.app-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.app-footer a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.app-footer a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
 /* ===== 全体レイアウト(上: 埋め込み動画、下: URL入力と再生リストの縦並び) ===== */
 .layout {
   display: grid;
