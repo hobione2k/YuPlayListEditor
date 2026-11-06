@@ -1,6 +1,8 @@
 # YutPlayList
 
-YouTube動画の再生リストを作って、ブラウザ上で埋め込み再生できるシンプルなツール
+YouTube動画の再生リストを編集するツール、ブラウザ上でプレビューできるシンプルなツール
+
+* [YamaPlayer](https://github.com/koorimizuw/YamaPlayer) のプレイリスト編集が可能
 
 ## 使い方
 
