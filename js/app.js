@@ -224,7 +224,7 @@ function createListElement(list) {
   del.className = 'acc-delete';
   del.textContent = '削除';
   del.setAttribute('aria-label', `再生リスト「${list.name}」を削除`);
-  del.addEventListener('click', () => deleteList(list.id));
+  setupTwoStepDelete(del, () => deleteList(list.id));
 
   header.append(toggle, nameInput, count, del);
 
@@ -570,11 +570,50 @@ function createNewList() {
   nameInput.select();
 }
 
-// 再生リストを削除する(確認あり)
+// 削除確認の待ち時間(この時間内に2回目を押すと削除する)
+const DELETE_CONFIRM_MS = 3000;
+
+// ボタンを「2回押しで実行」にする(ダイアログを出さない誤操作防止)
+//   1回目: ボタンを確認状態(赤色・「もう一度押して削除」)にする
+//   2回目: 確認状態のうちに押されたら onConfirm を実行する
+//   一定時間経過、またはフォーカスが外れたら元の状態に戻す
+function setupTwoStepDelete(button, onConfirm) {
+  const originalText = button.textContent;
+  const originalLabel = button.getAttribute('aria-label');
+  let timer = null;
+
+  // 確認状態を解除して元の表示に戻す
+  const reset = () => {
+    clearTimeout(timer);
+    timer = null;
+    button.classList.remove('confirming');
+    button.textContent = originalText;
+    button.setAttribute('aria-label', originalLabel);
+  };
+
+  button.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (button.classList.contains('confirming')) {
+      // 2回目: 削除を実行
+      reset();
+      onConfirm();
+      return;
+    }
+    // 1回目: 確認状態にして、一定時間後に自動で元に戻す
+    button.classList.add('confirming');
+    button.textContent = 'もう一度押して削除';
+    button.setAttribute('aria-label', `${originalLabel}(もう一度押すと削除されます)`);
+    timer = setTimeout(reset, DELETE_CONFIRM_MS);
+  });
+
+  // 他の場所を操作したら確認状態を解除する
+  button.addEventListener('blur', reset);
+}
+
+// 再生リストを削除する(2回押しで確認済みの前提)
 function deleteList(listId) {
   const list = findList(listId);
   if (!list) return;
-  if (!confirm(`再生リスト「${list.name}」を削除しますか？\n(登録された動画 ${list.items.length} 件も削除されます)`)) return;
   playlists = playlists.filter((p) => p.id !== listId);
   savePlaylists();
   // 再生中の動画が含まれるリストを削除した場合はプレイヤーも停止する
