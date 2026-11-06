@@ -1,0 +1,596 @@
+/* ===== 基本設定 ===== */
+:root {
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --text: #1d1d1f;
+  --muted: #6e6e73;
+  --border: #d2d2d7;
+  --accent: #4F90CF;
+  --active: #e8f0fe;
+}
+
+/* ダークテーマの配色(OS設定がダークで、ライトが明示選択されていない場合) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121212;
+    --surface: #1e1e1e;
+    --text: #f1f1f1;
+    --muted: #a0a0a0;
+    --border: #3a3a3a;
+    --accent: #3b82f6;
+    --active: #1c2a40;
+    color-scheme: dark;
+  }
+}
+
+/* ダークテーマの配色(ボタンでダークが明示選択された場合) */
+:root[data-theme="dark"] {
+  --bg: #121212;
+  --surface: #1e1e1e;
+  --text: #f1f1f1;
+  --muted: #a0a0a0;
+  --border: #3a3a3a;
+  --accent: #4F90CF;
+  --active: #1c2a40;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* ページ全体: パネルを画面上端・左右中央に配置 */
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px 16px;
+  font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Meiryo", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ===== パネル(UI全体を囲む枠) ===== */
+.panel {
+  width: 100%;
+  max-width: 960px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+/* スマホ幅では余白を詰める */
+@media (max-width: 600px) {
+  body {
+    padding: 16px;
+  }
+}
+
+/* ===== ヘッダー ===== */
+/* 3列構成(左: 空き、中央: タイトル、右: テーマ切り替えボタン)でタイトルを中央に配置 */
+.app-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* テーマ切り替えボタン */
+/* ヘッダー右側のボタン群(拡大表示ボタン・テーマ切り替えボタン) */
+.header-actions {
+  grid-column: 3;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.theme-toggle {
+  height: 32px;
+  padding: 0 12px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent);
+}
+
+.app-header h1 {
+  grid-column: 2;
+  text-align: center;
+  margin: 0;
+  font-size: 1.6rem;
+  color: var(--accent);
+}
+
+/* ===== 全体レイアウト(上: 埋め込み動画、下: URL入力と再生リストの縦並び) ===== */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  padding: 20px;
+}
+
+/* ===== 拡大表示ON/OFF切り替え ===== */
+/* 矢印アイコンのボタン */
+.size-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.size-toggle:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ON(拡大表示中)はアクセント色にする */
+.size-toggle[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* 状態に応じてアイコンを切り替える(OFF: 拡大アイコン / ON: 縮小アイコン) */
+.size-toggle .icon-collapse,
+.size-toggle[aria-pressed="true"] .icon-expand {
+  display: none;
+}
+
+.size-toggle[aria-pressed="true"] .icon-collapse {
+  display: block;
+}
+
+/* ===== プレイヤー ===== */
+/* プレイヤーの最大幅(通常時はパネル幅いっぱい。拡大表示時はパネル自体が画面幅まで広がる) */
+.player-area {
+  --player-max: 100%;
+}
+
+/* Largeのときはパネルの最大幅を外し、動画を画面幅いっぱいに表示する */
+body[data-player-size="large"] .panel {
+  max-width: none;
+}
+
+/* Largeのときは動画の縦幅が画面に収まるよう、幅の上限を画面の高さから計算する
+   (画面の高さ - 動画より上の要素(余白・ヘッダー)の高さ) × 16/9 */
+body[data-player-size="large"] .player-area {
+  --player-offset: 140px;
+  --player-max: min(100%, calc((100vh - var(--player-offset)) * 16 / 9));
+}
+
+/* スマホのアドレスバー伸縮にも追従できるブラウザでは dvh を使う */
+@supports (height: 100dvh) {
+  body[data-player-size="large"] .player-area {
+    --player-max: min(100%, calc((100dvh - var(--player-offset)) * 16 / 9));
+  }
+}
+
+/* 再生リスト領域はパネルが広がっても間延びしないよう、従来の幅で中央に置く */
+.playlist-area {
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.player-frame {
+  position: relative;
+  width: 100%;
+  max-width: var(--player-max);
+  margin: 0 auto;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.player-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.player-placeholder {
+  color: #aaa;
+}
+
+/* 再生中タイトルはプレイヤーと同じ幅にそろえる */
+.now-playing {
+  max-width: var(--player-max);
+  font-size: 1.1rem;
+  margin: 12px auto;
+  word-break: break-word;
+}
+
+/* ===== 再生リストのアコーディオン ===== */
+.accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 再生リスト1つ分の枠 */
+.acc {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.acc.open {
+  border-color: var(--accent);
+}
+
+/* 見出し(開閉ボタン・名前入力欄・件数・削除ボタン) */
+.acc-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg);
+}
+
+/* 開閉ボタン(開いているときは矢印を下向きに回転) */
+.acc-toggle {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.8rem;
+  transition: transform 0.2s;
+}
+
+.acc-toggle:hover {
+  color: var(--accent);
+}
+
+.acc.open .acc-toggle {
+  transform: rotate(90deg);
+  color: var(--accent);
+}
+
+/* 再生リスト名の入力欄(普段は文字だけに見せ、ホバー/編集中に枠を出す) */
+.acc-name {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+}
+
+.acc-name:hover {
+  border-color: var(--border);
+}
+
+.acc-name:focus {
+  border-color: var(--accent);
+  background: var(--surface);
+  outline: none;
+}
+
+.acc-count {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.acc-delete {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.acc-delete:hover {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* 本体(動画追加フォーム・動画一覧) */
+.acc-body {
+  padding: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* 新しい再生リストの作成ボタン */
+.new-list-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  background: transparent;
+  color: var(--accent);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+}
+
+.new-list-btn:hover {
+  border-color: var(--accent);
+  background: var(--active);
+}
+
+/* ===== YamaPlayerメニュー(インポート・エクスポートの開閉式メニュー) ===== */
+/* 再生リストと区別するため、枠や背景を付けない控えめなデザインにする */
+/* セクション全体(ラベル + メニュー) */
+.io-section {
+  margin-top: 20px;
+  padding-top: 12px;
+  /* 再生リスト領域との区切り線 */
+  border-top: 1px solid var(--border);
+}
+
+/* セクションのラベル(小さめの見出し) */
+.io-label {
+  margin: 0 0 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+/* 見出し(小さく薄い文字のみ。クリックで開閉) */
+.io-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.io-summary:hover {
+  color: var(--text);
+}
+
+/* ブラウザ標準の三角マークを消す */
+.io-summary::-webkit-details-marker {
+  display: none;
+}
+
+/* 開閉の矢印(開いているときは下向きに回転) */
+.io-summary::before {
+  content: "▶";
+  font-size: 0.6rem;
+  transition: transform 0.2s;
+}
+
+.io-menu[open] > .io-summary::before {
+  transform: rotate(90deg);
+}
+
+/* メニューの中身(説明文とボタン群) */
+.io-body {
+  padding: 8px 0 0 14px;
+}
+
+/* 説明文 */
+.io-desc {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.io-desc p {
+  margin: 0;
+}
+
+.io-desc ul {
+  margin: 4px 0 0;
+  padding-left: 1.2em;
+}
+
+.io-desc code {
+  font-size: 0.8rem;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--bg);
+}
+
+/* ボタン群 */
+.io-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.io-btn {
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.io-btn:hover {
+  color: var(--text);
+  border-color: var(--muted);
+}
+
+/* ===== 追加フォーム ===== */
+.add-form {
+  display: flex;
+  gap: 8px;
+}
+
+.add-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  font-size: 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.add-form button {
+  padding: 8px 16px;
+  background: var(--accent);
+  color: #fff;
+}
+
+.message {
+  min-height: 1.2em;
+  margin: 6px 0;
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
+/* ===== 再生リスト ===== */
+.playlist {
+  /* 並べ替え時の位置計算(offsetTop)の基準にする */
+  position: relative;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.playlist-item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px;
+  /* パネル(surface色)の上で区別しやすいよう、項目は背景色を変える */
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.playlist-item:hover,
+.playlist-item:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.playlist-item.active {
+  background: var(--active);
+  border-color: var(--accent);
+}
+
+/* 並べ替え用のドラッグハンドル(タッチ操作でスクロールさせない) */
+.drag-handle {
+  flex-shrink: 0;
+  padding: 8px 2px;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--muted);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.drag-handle:hover {
+  color: var(--accent);
+}
+
+/* ドラッグ中の行(他の行より手前に表示し、持ち上げたような影を付ける) */
+.playlist-item.dragging {
+  position: relative;
+  z-index: 10;
+  opacity: 0.9;
+  border-color: var(--accent);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  cursor: grabbing;
+}
+
+.playlist-item.dragging .drag-handle {
+  cursor: grabbing;
+}
+
+/* ドラッグ中はページ全体をつかみカーソルにし、iframeがポインタを奪わないようにする */
+body.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+body.is-dragging iframe {
+  pointer-events: none;
+}
+
+.playlist-item img {
+  width: 120px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+  background: #000;
+}
+
+.item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-title {
+  margin: 0 0 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.item-url {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.delete-btn {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.delete-btn:hover {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.empty {
+  color: var(--muted);
+  text-align: center;
+}
