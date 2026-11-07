@@ -186,9 +186,9 @@ body[data-player-size="large"] .panel {
 }
 
 /* Largeのときは動画の縦幅が画面に収まるよう、幅の上限を画面の高さから計算する
-   (画面の高さ - 動画より上の要素(余白・ヘッダー)の高さ) × 16/9 */
+   (画面の高さ - 動画より上の要素(余白・ヘッダー・インポート/エクスポートツールバー)の高さ) × 16/9 */
 body[data-player-size="large"] .player-area {
-  --player-offset: 140px;
+  --player-offset: 204px;
   --player-max: min(100%, calc((100vh - var(--player-offset)) * 16 / 9));
 }
 
@@ -361,57 +361,87 @@ body[data-player-size="large"] .player-area {
 }
 
 /* ===== YamaPlayerツールバー(インポート・エクスポート) ===== */
-/* 再生リストのすぐ上に常時表示する。再生リストと区別するため控えめなデザインにする */
+/* ヘッダー内のタイトルの下に常時表示する。再生リストと区別するため控えめなデザインにする */
+/* ヘッダーの幅いっぱいに広げる */
 .io-section {
-  margin-bottom: 4px;
+  width: 100%;
+  /* ヘッダーのグリッドで全列にまたがる2行目に置き、タイトルとの間に余白を空ける */
+  grid-column: 1 / -1;
+  margin: 12px auto 0;
 }
 
-/* ツールバー本体(左に説明、右にボタン。狭い画面では折り返す) */
-/* 説明文とボタンを1つの枠で囲んでパネルとして見せる */
+/* メッセージが無いときは非表示にして、ツールバーと動画の間に空白を作らない */
+.io-section .message:empty {
+  display: none;
+}
+
+/* ツールバーに合わせてメッセージも中央寄せにする */
+.io-section .message {
+  text-align: center;
+}
+
+/* ツールバー本体(左にドロップエリア、右にエクスポートボタン) */
+/* 外枠や背景は付けず、ドロップエリアとボタンを幅いっぱいに並べる */
 .io-bar {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px 12px;
-  padding: 10px 14px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  gap: 12px;
+  width: 100%;
 }
 
-/* 説明文 */
-.io-desc {
-  margin: 0;
+/* ドロップエリア(点線枠。残りの幅いっぱいに広げる) */
+.drop-zone {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  text-align: center;
   font-size: 0.95rem;
   line-height: 1.6;
   /* 薄いグレーだと読みにくいため、本文と同じ色にする */
   color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+/* マウスを乗せたとき・キーボードで選択したとき・ファイルをドラッグ中は枠をアクセント色にする */
+.drop-zone:hover,
+.drop-zone:focus-visible,
+body.is-file-dragging .drop-zone {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  outline: none;
 }
 
 /* 「YamaPlayer」のリンクはアクセント色の太字で目立たせる */
-.io-desc a {
+.drop-zone a {
   font-weight: 600;
   color: var(--accent);
 }
 
-/* ボタン群 */
-.io-actions {
-  display: flex;
-  gap: 8px;
+/* エクスポートボタンは縮めず右端に置く */
+.io-bar .io-btn {
+  flex-shrink: 0;
 }
 
+/* アイコンのみの正方形ボタン(ヘッダーの拡大表示ボタンと同じ見た目に揃える) */
 .io-btn {
-  padding: 4px 10px;
-  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
   background: transparent;
   color: var(--muted);
   border: 1px solid var(--border);
 }
 
+/* マウスを乗せたときはアクセント色にする(拡大表示ボタンと同じ) */
 .io-btn:hover {
-  color: var(--text);
-  border-color: var(--muted);
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 /* ===== 追加フォーム ===== */
@@ -524,6 +554,51 @@ body.is-dragging {
 
 body.is-dragging iframe {
   pointer-events: none;
+}
+
+/* ===== ファイルのドラッグ&ドロップ(インポート) ===== */
+/* ファイルをドラッグ中は、動画のiframeがドロップを奪わないようにする */
+body.is-file-dragging iframe {
+  pointer-events: none;
+}
+
+/* ドロップ待ちであることを示すため、画面の外周に点線の枠を表示する
+   (ドロップ先の再生リストが見えるよう背景は透明にし、
+    ドラッグイベントを邪魔しないよう pointer-events: none にする) */
+body.is-file-dragging::after {
+  content: "";
+  position: fixed;
+  inset: 12px;
+  z-index: 1000;
+  border: 3px dashed var(--accent);
+  border-radius: 16px;
+  pointer-events: none;
+}
+
+/* 画面下部に、ドロップ先に応じた案内文(app.jsでdata-drop-labelに設定)を表示する */
+body.is-file-dragging::before {
+  content: attr(data-drop-label);
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  z-index: 1001;
+  max-width: calc(100% - 48px);
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* ドロップ先の再生リストはアクセント色の太枠で強調する */
+.acc.drop-target {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .playlist-item img {

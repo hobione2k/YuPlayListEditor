@@ -40,6 +40,29 @@
       <!-- ライト/ダークテーマ切り替えボタン(表示文字はtheme.jsで設定) -->
       <button type="button" class="theme-toggle" id="theme-toggle"></button>
     </div>
+
+    <!-- YamaPlayer形式JSONのインポート・エクスポート(タイトルの下に常時表示するツールバー) -->
+    <section class="io-section" aria-label="YamaPlayer形式でのインポート・エクスポート">
+      <div class="io-bar">
+        <!-- インポート用のドロップエリア(左側)
+             ・JSONファイルをドロップすると読み込む(ドロップ処理はapp.jsでページ全体に設定)
+             ・クリック/Enterキーでファイル選択ダイアログを開く(labelで非表示のファイル選択欄と関連付け) -->
+        <label class="drop-zone" id="drop-zone" for="import-file" tabindex="0">
+          <a href="https://github.com/koorimizuw/YamaPlayer" target="_blank" rel="noopener noreferrer">YamaPlayer</a>
+          プレイリスト(json)をドラッグ&amp;ドロップまたはクリックして読み込み
+        </label>
+        <input type="file" id="import-file" accept=".json,application/json" hidden>
+        <!-- エクスポートボタン(右側)。ファイル保存を表すダウンロードアイコンで表示する -->
+        <button type="button" class="io-btn" id="export-json" aria-label="YamaPlayer形式(json)でエクスポート" title="YamaPlayer形式(json)でエクスポート">
+          <!-- ダウンロードアイコン(下向き矢印とトレイ) -->
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="M12 3v12M7 10l5 5 5-5M4 17v3h16v-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <!-- インポート・エクスポート結果などのメッセージ -->
+      <p class="message" id="status" role="status"></p>
+    </section>
   </header>
 
   <main class="layout">
@@ -53,25 +76,6 @@
 
     <!-- 再生リスト領域 -->
     <section class="playlist-area">
-      <!-- YamaPlayer形式JSONのインポート・エクスポート(常時表示のツールバー) -->
-      <section class="io-section" aria-label="YamaPlayer形式でのインポート・エクスポート">
-        <div class="io-bar">
-          <!-- 機能の説明(左側) -->
-          <p class="io-desc">
-            <a href="https://github.com/koorimizuw/YamaPlayer" target="_blank" rel="noopener noreferrer">YamaPlayer</a>
-            プレイリスト(json)の読み込みと出力
-          </p>
-          <!-- インポート・エクスポートボタン(右側) -->
-          <div class="io-actions">
-            <button type="button" class="io-btn" id="import-json">インポート</button>
-            <button type="button" class="io-btn" id="export-json">エクスポート</button>
-            <input type="file" id="import-file" accept=".json,application/json" hidden>
-          </div>
-        </div>
-        <!-- インポート・エクスポート結果などのメッセージ -->
-        <p class="message" id="status" role="status"></p>
-      </section>
-
       <!-- 再生リストのアコーディオン(各リストの中身はapp.jsで生成) -->
       <div class="accordion" id="accordion"></div>
       <p class="empty" id="no-lists" hidden>再生リストがありません</p>

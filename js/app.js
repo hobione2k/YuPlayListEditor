@@ -19,7 +19,7 @@ const accordionEl = document.getElementById('accordion');
 const noListsEl = document.getElementById('no-lists');
 const newListBtn = document.getElementById('new-list');
 const statusEl = document.getElementById('status');
-const importBtn = document.getElementById('import-json');
+const dropZone = document.getElementById('drop-zone');
 const exportBtn = document.getElementById('export-json');
 const importFileInput = document.getElementById('import-file');
 const playerEl = document.getElementById('player');
@@ -654,24 +654,32 @@ function exportJson() {
   statusEl.textContent = `${playlists.length} 件の再生リストをエクスポートしました`;
 }
 
-// 選択されたYamaPlayer形式のJSONファイルを読み込み、再生リストとして追加する
-// (既存の再生リストは残したまま、末尾に追加する)
-async function importJson(file) {
+// YamaPlayer形式のJSONファイルを読み込んで解析する
+// (失敗した場合や再生リストが無い場合はメッセージを表示してnullを返す)
+async function readYamaPlayerFile(file, messageEl) {
   let result;
   try {
     result = parseYamaPlayerJson(await file.text(), extractVideoId, watchUrl);
   } catch (err) {
-    statusEl.textContent = `読み込みに失敗しました: ${err.message}`;
-    return;
+    messageEl.textContent = `読み込みに失敗しました: ${err.message}`;
+    return null;
   }
   if (result.playlists.length === 0) {
-    statusEl.textContent = 'ファイルに再生リストが含まれていません';
-    return;
+    messageEl.textContent = 'ファイルに再生リストが含まれていません';
+    return null;
   }
+  return result;
+}
 
-  // 取り込んだリストを本ツールの形式に整えて追加する(閉じた状態で追加)
+// 選択されたYamaPlayer形式のJSONファイルを読み込み、再生リストとして追加する
+// (既存の再生リストは残したまま、末尾に追加する)
+async function importJson(file) {
+  const result = await readYamaPlayerFile(file, statusEl);
+  if (!result) return;
+
+  // 取り込んだリストを本ツールの形式に整えて追加する(中身をすぐ確認できるよう開いた状態で追加)
   result.playlists.forEach((p, i) => {
-    const list = createPlaylist(p.name || `インポート${i + 1}`, p.items, false);
+    const list = createPlaylist(p.name || `インポート${i + 1}`, p.items, true);
     list.active = p.active;
     list.youtubeListId = p.youtubeListId;
     playlists.push(list);
@@ -687,19 +695,150 @@ async function importJson(file) {
   statusEl.textContent = text;
 }
 
+// YamaPlayer形式のJSONファイルに含まれる動画を、既存の再生リストの末尾に追加する
+// (ファイル内の全再生リストの動画をまとめて追加し、既にある動画は追加しない)
+async function importJsonIntoList(file, listId) {
+  const list = findList(listId);
+  if (!list) return;
+  // 結果メッセージは追加先の再生リスト内に表示する
+  const listMessageEl = () => accordionEl.querySelector(`[data-list-id="${listId}"] .acc-body .message`);
+
+  const result = await readYamaPlayerFile(file, listMessageEl() ?? statusEl);
+  if (!result) return;
+  // 読み込み中にリストが削除されていないか再確認
+  if (!findList(listId)) return;
+
+  // 既存の動画と重複しないものだけを追加する
+  let added = 0;
+  let duplicated = 0;
+  result.playlists.forEach((p) => {
+    p.items.forEach((item) => {
+      if (list.items.some((v) => v.id === item.id)) {
+        duplicated++;
+        return;
+      }
+      list.items.push(item);
+      added++;
+    });
+  });
+
+  // 追加結果がすぐ見えるよう、追加先のリストを開いて描き直す
+  list.open = true;
+  savePlaylists();
+  const el = rerenderList(listId);
+
+  let text = `動画 ${added} 件を追加しました`;
+  if (duplicated > 0) text += `。既にある ${duplicated} 件は追加していません`;
+  if (result.skipped > 0) text += `。YouTube以外または重複の ${result.skipped} 件は取り込んでいません`;
+  const messageEl = el?.querySelector('.acc-body .message') ?? statusEl;
+  messageEl.textContent = text;
+}
+
 // ===== イベント登録 =====
 newListBtn.addEventListener('click', createNewList);
 
 // エクスポートボタン
 exportBtn.addEventListener('click', exportJson);
 
-// インポートボタン: 非表示のファイル選択欄を開く
-importBtn.addEventListener('click', () => importFileInput.click());
+// ドロップエリア: クリックはlabelの機能でファイル選択欄が開く。
+// キーボード操作(Enter/Space)でも同様に開けるようにする
+dropZone.addEventListener('keydown', (e) => {
+  if (e.target !== dropZone) return; // 中のリンクでのEnterはリンク本来の動作にする
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    importFileInput.click();
+  }
+});
 importFileInput.addEventListener('change', async () => {
   const file = importFileInput.files[0];
   if (file) await importJson(file);
   // 同じファイルを続けて選んでも反応するよう選択をリセットする
   importFileInput.value = '';
+});
+
+// ===== ドラッグ&ドロップでのインポート =====
+// ページ上のどこにJSONファイルをドロップしてもインポートできるようにする
+// ・既存の再生リストの上にドロップした場合: そのリストに動画を追加する
+// ・それ以外の場所にドロップした場合: 新しい再生リストとして追加する
+
+// ドロップ先の案内文
+const DROP_LABEL_NEW = 'ドロップして新しい再生リストとしてインポート';
+const DROP_LABEL_ADD = 'ドロップしてこの再生リストに動画を追加';
+
+// ドラッグ中のデータにファイルが含まれているかを判定する
+// (ページ内の文字列やリンクのドラッグには反応しないようにするため)
+function isFileDrag(e) {
+  return e.dataTransfer && [...e.dataTransfer.types].includes('Files');
+}
+
+// 子要素への出入りでもdragenter/dragleaveが発生するため、回数を数えて
+// ページ全体から出たときだけ強調表示を消す
+let fileDragDepth = 0;
+
+// ドラッグ中のポインタ位置にある再生リストの要素を返す(リスト外ならnull)
+function findDropTargetList(e) {
+  return e.target instanceof Element ? e.target.closest('.acc') : null;
+}
+
+// ドロップ先として強調表示する再生リストを切り替え、画面下部の案内文も合わせて変える
+function setDropTargetList(section) {
+  accordionEl.querySelectorAll('.acc.drop-target').forEach((el) => {
+    if (el !== section) el.classList.remove('drop-target');
+  });
+  section?.classList.add('drop-target');
+  document.body.dataset.dropLabel = section ? DROP_LABEL_ADD : DROP_LABEL_NEW;
+}
+
+// ドロップ待ちの強調表示を切り替える(終了時はリストの強調表示も消す)
+function setFileDragging(on) {
+  document.body.classList.toggle('is-file-dragging', on);
+  if (!on) setDropTargetList(null);
+}
+
+window.addEventListener('dragenter', (e) => {
+  if (!isFileDrag(e)) return;
+  e.preventDefault();
+  fileDragDepth++;
+  setFileDragging(true);
+});
+
+window.addEventListener('dragover', (e) => {
+  if (!isFileDrag(e)) return;
+  // preventDefaultしないとドロップが許可されず、ブラウザがファイルを開いてしまう
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+  // ポインタ下の再生リストをドロップ先として強調表示する
+  setDropTargetList(findDropTargetList(e));
+});
+
+window.addEventListener('dragleave', (e) => {
+  if (!isFileDrag(e)) return;
+  fileDragDepth = Math.max(0, fileDragDepth - 1);
+  if (fileDragDepth === 0) setFileDragging(false);
+});
+
+window.addEventListener('drop', async (e) => {
+  if (!isFileDrag(e)) return;
+  // ブラウザがファイルを開いてページ遷移するのを防ぐ
+  e.preventDefault();
+  fileDragDepth = 0;
+  // ドロップ先の再生リスト(強調表示を消す前に取得しておく)
+  const targetList = findDropTargetList(e);
+  setFileDragging(false);
+
+  // 複数ファイルが落とされた場合は先頭のJSONファイルだけを読み込む
+  const files = [...e.dataTransfer.files];
+  const file = files.find((f) => f.name.toLowerCase().endsWith('.json') || f.type === 'application/json');
+  if (!file) {
+    statusEl.textContent = 'JSONファイルをドロップしてください';
+    return;
+  }
+  // 再生リストの上なら動画を追加、それ以外は新しい再生リストとして取り込む
+  if (targetList) {
+    await importJsonIntoList(file, targetList.dataset.listId);
+  } else {
+    await importJson(file);
+  }
 });
 
 // ===== 初期表示 =====
