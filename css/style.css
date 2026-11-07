@@ -380,16 +380,6 @@ body[data-player-size="large"] .player-area {
   margin: 12px auto 0;
 }
 
-/* メッセージが無いときは非表示にして、ツールバーと動画の間に空白を作らない */
-.io-section .message:empty {
-  display: none;
-}
-
-/* ツールバーに合わせてメッセージも中央寄せにする */
-.io-section .message {
-  text-align: center;
-}
-
 /* ツールバー本体(左にドロップエリア、右にエクスポートボタン) */
 /* 外枠や背景は付けず、ドロップエリアとボタンを幅いっぱいに並べる */
 .io-bar {
@@ -516,6 +506,81 @@ button {
   margin: 6px 0;
   font-size: 0.85rem;
   color: var(--accent);
+}
+
+/* メッセージとクリアボタンを横並びにする */
+.message-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ===== 通知メッセージ(画面下部に重ねて表示) ===== */
+/* 画面下部の中央に固定表示する(スクロール位置に関係なく見える) */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: 100;
+  /* 画面幅が狭いときは左右16pxの余白を残す */
+  max-width: calc(100vw - 32px);
+  padding: 6px 8px 6px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  /* 非表示時は透明にして少し下にずらし、クリックも受け付けない */
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 12px);
+  /* 出現・消えるときのトランジション(時間はapp.jsのTOAST_FADE_MSと揃える) */
+  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
+}
+
+/* メッセージ表示中(app.jsでis-visibleクラスを付ける)は下からふわっと出現させる */
+.toast.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
+/* 動きを減らす設定の環境では、移動せずにフェードだけにする */
+@media (prefers-reduced-motion: reduce) {
+  .toast,
+  .toast.is-visible {
+    transform: translateX(-50%);
+  }
+}
+
+/* 通知内のメッセージは余白を詰め、長い文は折り返す */
+.toast .message {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* メッセージのクリアボタン(小さな×ボタン) */
+.message-clear {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  line-height: 1;
+  font-size: 0.9rem;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 50%;
+}
+
+/* マウスを乗せたときはアクセント色にする */
+.message-clear:hover {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+/* メッセージが空のときはクリアボタンを隠す */
+.message:empty + .message-clear {
+  display: none;
 }
 
 /* ===== 再生リスト ===== */

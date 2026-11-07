@@ -13,6 +13,10 @@ const OEMBED_BASE = 'https://www.youtube.com/oembed?format=json&url=';
 const DEFAULT_LIST_NAME = '無題の再生リスト';
 // 再生リスト名の最大文字数
 const MAX_NAME_LENGTH = 50;
+// 通知メッセージを自動で消すまでの時間(ミリ秒)
+const MESSAGE_AUTO_CLEAR_MS = 3000;
+// 画面下部の通知が消えるアニメーションの時間(ミリ秒。CSSの.toastのtransitionと揃える)
+const TOAST_FADE_MS = 250;
 
 // ===== DOM要素 =====
 const accordionEl = document.getElementById('accordion');
@@ -84,6 +88,59 @@ function savePlaylists() {
   } catch {
     statusEl.textContent = '再生リストを保存できませんでした';
   }
+}
+
+// ===== メッセージ =====
+
+// メッセージ欄の内容を消す
+// (画面下部の通知の場合は、フェードアウトが終わってから文字を消す)
+function clearMessage(messageEl) {
+  const toast = messageEl.closest('.toast');
+  if (!toast) {
+    messageEl.textContent = '';
+    return;
+  }
+  // 表示用のクラスを外してフェードアウトを開始する
+  toast.classList.remove('is-visible');
+  setTimeout(() => {
+    // フェードアウト中に新しいメッセージが表示された場合は消さない
+    if (toast.classList.contains('is-visible')) return;
+    messageEl.textContent = '';
+  }, TOAST_FADE_MS);
+}
+
+// メッセージ欄の内容が変わったら、一定時間後に自動で消えるようにする
+// (メッセージを表示する側はtextContentを書き換えるだけでよい。
+//  新しいメッセージが表示されたら残り時間をリセットする)
+function enableAutoClearMessage(messageEl) {
+  let timer = null;
+  // 画面下部の通知かどうか(通知ならフェードイン用のクラスを付け外しする)
+  const toast = messageEl.closest('.toast');
+  const observer = new MutationObserver(() => {
+    // 前のメッセージ用のタイマーは取り消す
+    clearTimeout(timer);
+    timer = null;
+    // 空になった(消された)ときはタイマー不要
+    if (!messageEl.textContent) return;
+    // 画面下部の通知はフェードインで表示する
+    toast?.classList.add('is-visible');
+    timer = setTimeout(() => clearMessage(messageEl), MESSAGE_AUTO_CLEAR_MS);
+  });
+  // textContentの書き換え(子ノードの入れ替え)と文字の変更を監視する
+  observer.observe(messageEl, { childList: true, characterData: true, subtree: true });
+}
+
+// メッセージを消すクリアボタンを作る
+// (表示/非表示はCSSで制御し、メッセージが空のときは自動的に隠れる)
+function createMessageClearButton(messageEl) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'message-clear';
+  button.textContent = '×';
+  button.setAttribute('aria-label', 'メッセージを消す');
+  button.title = 'メッセージを消す';
+  button.addEventListener('click', () => clearMessage(messageEl));
+  return button;
 }
 
 // IDから再生リストを探す
@@ -266,10 +323,15 @@ function createListElement(list) {
   addBtn.textContent = '追加';
   form.append(urlInput, addBtn);
 
-  // メッセージ表示欄
+  // メッセージ表示欄(クリアボタンと横並びにする)
   const message = document.createElement('p');
   message.className = 'message';
   message.setAttribute('role', 'status');
+  const messageRow = document.createElement('div');
+  messageRow.className = 'message-row';
+  messageRow.append(message, createMessageClearButton(message));
+  // 一定時間後に自動で消す
+  enableAutoClearMessage(message);
 
   // 追加フォームの送信(ページ遷移はさせない)
   form.addEventListener('submit', (e) => {
@@ -289,7 +351,7 @@ function createListElement(list) {
   empty.textContent = '再生リストは空です';
   empty.hidden = list.items.length > 0;
 
-  body.append(form, message, ul, empty);
+  body.append(form, messageRow, ul, empty);
   section.append(header, body);
 
   // 開閉状態を反映する
@@ -806,6 +868,11 @@ async function importJsonIntoList(file, listId) {
 
 // ===== イベント登録 =====
 newListBtn.addEventListener('click', createNewList);
+
+// 画面下部の通知メッセージのクリアボタン
+document.getElementById('status-clear').addEventListener('click', () => clearMessage(statusEl));
+// 画面下部の通知メッセージも一定時間後に自動で消す
+enableAutoClearMessage(statusEl);
 
 // エクスポートボタン
 exportBtn.addEventListener('click', exportJson);

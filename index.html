@@ -64,8 +64,6 @@
           <span class="export-count" id="export-count" aria-hidden="true" hidden></span>
         </button>
       </div>
-      <!-- インポート・エクスポート結果などのメッセージ -->
-      <p class="message" id="status" role="status"></p>
     </section>
   </header>
 
@@ -95,6 +93,13 @@
     <span class="footer-sep" aria-hidden="true">|</span>
     <a href="https://github.com/hobione2k/YutPlayList/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a>
   </footer>
+  </div>
+
+  <!-- 通知メッセージ(インポート・エクスポート結果など)。画面下部に重ねて表示する
+       メッセージ欄と、表示中のメッセージを消すクリアボタン(メッセージがあるときだけ表示) -->
+  <div class="message-row toast">
+    <p class="message" id="status" role="status"></p>
+    <button type="button" class="message-clear" id="status-clear" aria-label="メッセージを消す" title="メッセージを消す">×</button>
   </div>
 
   <!-- YamaPlayer形式JSONの変換処理(app.jsから使うため先に読み込む) -->
