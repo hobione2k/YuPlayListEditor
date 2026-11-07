@@ -1,4 +1,4 @@
-# YutPlayList
+# YuPlayListEditor
 
 YouTube動画の再生リストを編集するツール、ブラウザ上でプレビューできるシンプルなツール
 
@@ -24,7 +24,7 @@ python -m http.server 8000
 * 項目左端の「⠿」をドラッグして順番を変更（項目選択中に Alt+↑↓ キーでも移動可）
 * 「削除」ボタンで再生リストから削除
 * 再生リストはブラウザ（localStorage）に保存され、次回開いたときも残ります
-* [YamaPlayer](https://github.com/koorimizuw/YamaPlayer) のプレイリストJSON形式でインポート / エクスポート（画面下部の「YamaPlayer」メニューを開いて操作）
+* [YamaPlayer](https://github.com/koorimizuw/YamaPlayer) のプレイリストJSON形式でインポート / エクスポート（再生リスト上部のインポート / エクスポートボタンで操作）
   * エクスポート: 全ての再生リストを1つのJSONファイルとしてダウンロード（YouTube動画は `Mode: 1`（AVPro）で出力）
   * インポート: JSONファイル内の再生リストを、既存の再生リストの後ろに追加（YouTube以外のURLは取り込みません）
 * 右上（テーマ切り替えボタンの左）の矢印ボタンで埋め込み動画の拡大表示をON/OFF（ON: 画面に収まる範囲で最大表示、OFF: パネル幅いっぱい、選択はブラウザに保存）

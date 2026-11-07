@@ -360,91 +360,44 @@ body[data-player-size="large"] .player-area {
   background: var(--active);
 }
 
-/* ===== YamaPlayerメニュー(インポート・エクスポートの開閉式メニュー) ===== */
-/* 再生リストと区別するため、枠や背景を付けない控えめなデザインにする */
-/* セクション全体(ラベル + メニュー) */
+/* ===== YamaPlayerツールバー(インポート・エクスポート) ===== */
+/* 再生リストのすぐ上に常時表示する。再生リストと区別するため控えめなデザインにする */
 .io-section {
-  margin-top: 20px;
-  padding-top: 12px;
-  /* 再生リスト領域との区切り線 */
-  border-top: 1px solid var(--border);
+  margin-bottom: 4px;
 }
 
-/* セクションのラベル(小さめの見出し) */
-.io-label {
-  margin: 0 0 4px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  color: var(--muted);
-}
-
-/* 見出し(小さく薄い文字のみ。クリックで開閉) */
-.io-summary {
-  display: inline-flex;
+/* ツールバー本体(左に説明、右にボタン。狭い画面では折り返す) */
+/* 説明文とボタンを1つの枠で囲んでパネルとして見せる */
+.io-bar {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  padding: 4px 0;
-  font-size: 0.8rem;
-  color: var(--muted);
-  cursor: pointer;
-  list-style: none;
-  user-select: none;
-}
-
-.io-summary:hover {
-  color: var(--text);
-}
-
-/* ブラウザ標準の三角マークを消す */
-.io-summary::-webkit-details-marker {
-  display: none;
-}
-
-/* 開閉の矢印(開いているときは下向きに回転) */
-.io-summary::before {
-  content: "▶";
-  font-size: 0.6rem;
-  transition: transform 0.2s;
-}
-
-.io-menu[open] > .io-summary::before {
-  transform: rotate(90deg);
-}
-
-/* メニューの中身(説明文とボタン群) */
-.io-body {
-  padding: 8px 0 0 14px;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
 }
 
 /* 説明文 */
 .io-desc {
-  margin: 0 0 10px;
-  font-size: 0.8rem;
-  line-height: 1.6;
-  color: var(--muted);
-}
-
-.io-desc p {
   margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  /* 薄いグレーだと読みにくいため、本文と同じ色にする */
+  color: var(--text);
 }
 
-.io-desc ul {
-  margin: 4px 0 0;
-  padding-left: 1.2em;
-}
-
-.io-desc code {
-  font-size: 0.8rem;
-  padding: 1px 4px;
-  border-radius: 4px;
-  background: var(--bg);
+/* 「YamaPlayer」のリンクはアクセント色の太字で目立たせる */
+.io-desc a {
+  font-weight: 600;
+  color: var(--accent);
 }
 
 /* ボタン群 */
-.io-bar {
+.io-actions {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
 }
 

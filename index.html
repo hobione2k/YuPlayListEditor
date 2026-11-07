@@ -14,7 +14,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://i.ytimg.com; frame-src https://www.youtube-nocookie.com; connect-src https://www.youtube.com; base-uri 'none'; form-action 'none'">
   <!-- YouTube埋め込みはリファラが必要なため、オリジンのみ送信する設定にする -->
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <title>YutPlayList</title>
+  <title>YuPlayListEditor</title>
   <link rel="stylesheet" href="./css/style.css">
   <!-- 画面描画前にテーマを適用してちらつきを防ぐため、head内で読み込む -->
   <script src="./js/theme.js"></script>
@@ -23,7 +23,7 @@
   <!-- UI全体を囲むパネル(画面中央に配置) -->
   <div class="panel">
   <header class="app-header">
-    <h1>YutPlayList</h1>
+    <h1>YuPlayListEditor</h1>
     <!-- ヘッダー右側のボタン群 -->
     <div class="header-actions">
       <!-- 埋め込み動画の拡大表示ON/OFF切り替え(ON: 画面幅いっぱい / OFF: パネル幅) -->
@@ -53,34 +53,31 @@
 
     <!-- 再生リスト領域 -->
     <section class="playlist-area">
+      <!-- YamaPlayer形式JSONのインポート・エクスポート(常時表示のツールバー) -->
+      <section class="io-section" aria-label="YamaPlayer形式でのインポート・エクスポート">
+        <div class="io-bar">
+          <!-- 機能の説明(左側) -->
+          <p class="io-desc">
+            <a href="https://github.com/koorimizuw/YamaPlayer" target="_blank" rel="noopener noreferrer">YamaPlayer</a>
+            プレイリスト(json)の読み込みと出力
+          </p>
+          <!-- インポート・エクスポートボタン(右側) -->
+          <div class="io-actions">
+            <button type="button" class="io-btn" id="import-json">インポート</button>
+            <button type="button" class="io-btn" id="export-json">エクスポート</button>
+            <input type="file" id="import-file" accept=".json,application/json" hidden>
+          </div>
+        </div>
+        <!-- インポート・エクスポート結果などのメッセージ -->
+        <p class="message" id="status" role="status"></p>
+      </section>
+
       <!-- 再生リストのアコーディオン(各リストの中身はapp.jsで生成) -->
       <div class="accordion" id="accordion"></div>
       <p class="empty" id="no-lists" hidden>再生リストがありません</p>
 
       <!-- 新しい再生リストの作成ボタン -->
       <button type="button" class="new-list-btn" id="new-list">＋ 新しい再生リスト</button>
-
-      <!-- YamaPlayer形式JSONのインポート・エクスポート(開閉式メニュー) -->
-      <section class="io-section" aria-labelledby="io-label">
-      <!-- セクションのラベル -->
-      <details class="io-menu">
-        <summary class="io-summary">YamaPlayer</summary>
-        <div class="io-body">
-          <!-- 機能の説明文 -->
-          <div class="io-desc">
-            <p><a href="https://github.com/koorimizuw/YamaPlayer" target="_blank" rel="noopener noreferrer">YamaPlayer</a>プレイリスト形式(json)でのインポート・エクスポート</p>
-          </div>
-
-          <!-- インポート・エクスポートボタン -->
-          <div class="io-bar">
-            <button type="button" class="io-btn" id="import-json">インポート</button>
-            <button type="button" class="io-btn" id="export-json">エクスポート</button>
-            <input type="file" id="import-file" accept=".json,application/json" hidden>
-          </div>
-        </div>
-      </details>
-      </section>
-      <p class="message" id="status" role="status"></p>
     </section>
   </main>
 
