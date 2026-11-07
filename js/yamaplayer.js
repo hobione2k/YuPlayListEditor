@@ -25,6 +25,29 @@ const YAMA_PLAYER_TYPE = {
 // YouTube動画はAVProで再生する(YamaPlayerのYouTube取り込み処理と同じ)
 const YAMA_DEFAULT_PLAYER_TYPE = YAMA_PLAYER_TYPE.AVProVideoPlayer;
 
+// 動画の再生方式(未設定なら既定値)を返す
+function getPlayerType(item) {
+  return Number.isInteger(item.playerType) ? item.playerType : YAMA_DEFAULT_PLAYER_TYPE;
+}
+
+// 再生方式の表示名を返す
+function playerTypeLabel(playerType) {
+  switch (playerType) {
+    case YAMA_PLAYER_TYPE.UnityVideoPlayer: return 'Unity';
+    case YAMA_PLAYER_TYPE.AVProVideoPlayer: return 'AVPro';
+    case YAMA_PLAYER_TYPE.ImageViewer: return 'Image';
+    default: return 'Other';
+  }
+}
+
+// UnityPlayer/AVProを切り替えた後の再生方式を返す
+// (AVProならUnityへ、それ以外(Unity・その他)ならAVProへ切り替える)
+function nextPlayerType(playerType) {
+  return playerType === YAMA_PLAYER_TYPE.AVProVideoPlayer
+    ? YAMA_PLAYER_TYPE.UnityVideoPlayer
+    : YAMA_PLAYER_TYPE.AVProVideoPlayer;
+}
+
 // 本ツールの再生リスト一覧をYamaPlayer形式のJSON文字列に変換する
 function toYamaPlayerJson(playlists) {
   const data = {
@@ -33,7 +56,7 @@ function toYamaPlayerJson(playlists) {
       Active: typeof list.active === 'boolean' ? list.active : true,
       Name: list.name,
       Tracks: list.items.map((item) => ({
-        Mode: Number.isInteger(item.playerType) ? item.playerType : YAMA_DEFAULT_PLAYER_TYPE,
+        Mode: getPlayerType(item),
         Title: item.title,
         Url: item.url,
       })),

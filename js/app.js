@@ -27,7 +27,8 @@ const playerEl = document.getElementById('player');
 const nowPlayingEl = document.getElementById('now-playing');
 
 // ===== 状態 =====
-// 再生リスト一覧: { id, name, open, items: [{ id, title, url }] } の配列
+// 再生リスト一覧: { id, name, open, items: [{ id, title, url, playerType }] } の配列
+//   playerType: YamaPlayerの再生方式(0: UnityPlayer / 1: AVPro)
 //   open: アコーディオンが開いているかどうか
 let playlists = loadPlaylists();
 // 再生中の動画: { listId, videoId }(未再生ならnull)
@@ -331,7 +332,35 @@ function createItemElement(listId, item) {
   url.className = 'item-url';
   url.textContent = item.url;
   url.title = item.url;
-  info.append(title, url);
+
+  // 再生方式(UnityPlayer/AVPro)の切り替えボタン
+  // (YamaPlayer形式JSONの Mode として出力される)
+  const mode = document.createElement('button');
+  mode.type = 'button';
+  mode.className = 'mode-btn';
+  // ボタンの表示・説明を現在の再生方式に合わせる
+  const updateModeButton = () => {
+    const type = getPlayerType(item);
+    const label = playerTypeLabel(type);
+    mode.textContent = label;
+    mode.dataset.mode = label.toLowerCase();
+    mode.title = `再生方式: ${label}(クリックで${playerTypeLabel(nextPlayerType(type))}に切り替え)`;
+    mode.setAttribute('aria-label', `${item.title} の再生方式: ${label}。クリックで切り替え`);
+  };
+  updateModeButton();
+  mode.addEventListener('click', (e) => {
+    e.stopPropagation(); // 行クリック(再生)を発火させない
+    item.playerType = nextPlayerType(getPlayerType(item));
+    savePlaylists();
+    // 行全体は描き直さず、ボタンの表示だけ更新する(フォーカスを保つため)
+    updateModeButton();
+  });
+
+  // 再生方式ボタンとURLを1行に並べる
+  const meta = document.createElement('div');
+  meta.className = 'item-meta';
+  meta.append(mode, url);
+  info.append(title, meta);
 
   // 削除ボタン
   const del = document.createElement('button');
@@ -549,7 +578,8 @@ async function addItem(listId, input, messageEl) {
     return;
   }
 
-  list.items.push({ id, title, url: watchUrl(id) });
+  // 再生方式は既定値(AVPro)で追加する(一覧のボタンで後から切り替え可能)
+  list.items.push({ id, title, url: watchUrl(id), playerType: YAMA_DEFAULT_PLAYER_TYPE });
   savePlaylists();
   // このリストだけ描き直し、続けて追加できるようURL入力欄にフォーカスを戻す
   rerenderList(listId)?.querySelector('.url-input').focus();
