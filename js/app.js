@@ -21,6 +21,7 @@ const newListBtn = document.getElementById('new-list');
 const statusEl = document.getElementById('status');
 const dropZone = document.getElementById('drop-zone');
 const exportBtn = document.getElementById('export-json');
+const exportCountEl = document.getElementById('export-count');
 const importFileInput = document.getElementById('import-file');
 const playerEl = document.getElementById('player');
 const nowPlayingEl = document.getElementById('now-playing');
@@ -31,6 +32,9 @@ const nowPlayingEl = document.getElementById('now-playing');
 let playlists = loadPlaylists();
 // 再生中の動画: { listId, videoId }(未再生ならnull)
 let playing = null;
+// エクスポート対象として選択(チェック)されている再生リストのID
+// (一時的な選択なので保存はしない。1つも選択していなければ全てをエクスポートする)
+const selectedListIds = new Set();
 
 // ===== 保存・読み込み =====
 
@@ -158,6 +162,7 @@ async function fetchTitle(id) {
 function renderAll() {
   accordionEl.replaceChildren(...playlists.map(createListElement));
   noListsEl.hidden = playlists.length > 0;
+  updateExportButton();
 }
 
 // 指定した再生リスト1つ分だけ描き直す(他のリストの入力状態を保つため)
@@ -180,6 +185,19 @@ function createListElement(list) {
   // --- 見出し部分(開閉ボタン・名前入力欄・件数・削除ボタン) ---
   const header = document.createElement('div');
   header.className = 'acc-header';
+
+  // エクスポート対象として選択するチェックボックス
+  const select = document.createElement('input');
+  select.type = 'checkbox';
+  select.className = 'acc-select';
+  select.checked = selectedListIds.has(list.id);
+  select.title = 'エクスポート対象として選択';
+  select.setAttribute('aria-label', `再生リスト「${list.name}」をエクスポート対象として選択`);
+  select.addEventListener('change', () => {
+    if (select.checked) selectedListIds.add(list.id);
+    else selectedListIds.delete(list.id);
+    updateExportButton();
+  });
 
   // 開閉ボタン
   const toggle = document.createElement('button');
@@ -226,7 +244,7 @@ function createListElement(list) {
   del.setAttribute('aria-label', `再生リスト「${list.name}」を削除`);
   setupTwoStepDelete(del, () => deleteList(list.id));
 
-  header.append(toggle, nameInput, count, del);
+  header.append(select, toggle, nameInput, count, del);
 
   // --- 本体部分(動画追加フォーム・動画一覧) ---
   const body = document.createElement('div');
@@ -615,6 +633,7 @@ function deleteList(listId) {
   const list = findList(listId);
   if (!list) return;
   playlists = playlists.filter((p) => p.id !== listId);
+  selectedListIds.delete(listId); // 削除したリストは選択からも外す
   savePlaylists();
   // 再生中の動画が含まれるリストを削除した場合はプレイヤーも停止する
   if (playing && playing.listId === listId) clearPlayer();
@@ -630,14 +649,35 @@ function formatFileDate(date) {
     + `-${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
 }
 
-// 全ての再生リストをYamaPlayer形式のJSONファイルとしてダウンロードする
+// エクスポート対象の再生リストを返す
+// (チェックされたリストがあればそれだけを画面の並び順で、無ければ全てのリスト)
+function getExportTargets() {
+  const selected = playlists.filter((p) => selectedListIds.has(p.id));
+  return selected.length > 0 ? selected : playlists;
+}
+
+// エクスポートボタンの説明と選択件数バッジを、現在の選択状態に合わせて更新する
+function updateExportButton() {
+  const count = playlists.filter((p) => selectedListIds.has(p.id)).length;
+  const label = count > 0
+    ? `選択した再生リスト(${count}件)をYamaPlayer形式(json)でエクスポート`
+    : '全ての再生リストをYamaPlayer形式(json)でエクスポート';
+  exportBtn.title = label;
+  exportBtn.setAttribute('aria-label', label);
+  // 選択件数をボタン右上のバッジに表示する(未選択なら非表示)
+  exportCountEl.textContent = count > 0 ? String(count) : '';
+  exportCountEl.hidden = count === 0;
+}
+
+// エクスポート対象の再生リストをYamaPlayer形式のJSONファイルとしてダウンロードする
 // (ブラウザ内でファイルを生成して保存するだけで、外部へは送信しない)
 function exportJson() {
-  if (playlists.length === 0) {
+  const targets = getExportTargets();
+  if (targets.length === 0) {
     statusEl.textContent = 'エクスポートする再生リストがありません';
     return;
   }
-  const json = toYamaPlayerJson(playlists);
+  const json = toYamaPlayerJson(targets);
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
 
@@ -651,7 +691,7 @@ function exportJson() {
   // ダウンロード開始前に解放されないよう、少し待ってからURLを解放する
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-  statusEl.textContent = `${playlists.length} 件の再生リストをエクスポートしました`;
+  statusEl.textContent = `${targets.length} 件の再生リストをエクスポートしました`;
 }
 
 // YamaPlayer形式のJSONファイルを読み込んで解析する

@@ -52,12 +52,16 @@
           プレイリスト(json)をドラッグ&amp;ドロップまたはクリックして読み込み
         </label>
         <input type="file" id="import-file" accept=".json,application/json" hidden>
-        <!-- エクスポートボタン(右側)。ファイル保存を表すダウンロードアイコンで表示する -->
-        <button type="button" class="io-btn" id="export-json" aria-label="YamaPlayer形式(json)でエクスポート" title="YamaPlayer形式(json)でエクスポート">
+        <!-- エクスポートボタン(右側)。ファイル保存を表すダウンロードアイコンで表示する
+             ・再生リストのチェックボックスで選択したリストだけをエクスポートする(未選択なら全て)
+             ・説明文と選択件数バッジはapp.jsで選択状態に合わせて更新する -->
+        <button type="button" class="io-btn" id="export-json" aria-label="全ての再生リストをYamaPlayer形式(json)でエクスポート" title="全ての再生リストをYamaPlayer形式(json)でエクスポート">
           <!-- ダウンロードアイコン(下向き矢印とトレイ) -->
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
             <path d="M12 3v12M7 10l5 5 5-5M4 17v3h16v-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
+          <!-- 選択中の再生リスト数のバッジ -->
+          <span class="export-count" id="export-count" aria-hidden="true" hidden></span>
         </button>
       </div>
       <!-- インポート・エクスポート結果などのメッセージ -->

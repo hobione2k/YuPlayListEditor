@@ -267,6 +267,16 @@ body[data-player-size="large"] .player-area {
   background: var(--bg);
 }
 
+/* エクスポート対象の選択チェックボックス */
+.acc-select {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0 0 0 4px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 /* 開閉ボタン(開いているときは矢印を下向きに回転) */
 .acc-toggle {
   flex-shrink: 0;
@@ -436,6 +446,33 @@ body.is-file-dragging .drop-zone {
   background: transparent;
   color: var(--muted);
   border: 1px solid var(--border);
+}
+
+/* 選択件数バッジの位置の基準にする */
+.io-btn {
+  position: relative;
+}
+
+/* 選択中の再生リスト数のバッジ(ボタンの右上に重ねる) */
+.export-count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* hidden属性のときは確実に非表示にする */
+.export-count[hidden] {
+  display: none;
 }
 
 /* マウスを乗せたときはアクセント色にする(拡大表示ボタンと同じ) */
