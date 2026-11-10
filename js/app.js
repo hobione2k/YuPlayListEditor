@@ -375,7 +375,13 @@ function applyOpenState(section, open) {
 
 // ===== スマホ幅での文字の自動スクロール(タイトル・URL) =====
 // スマホ幅では文字を1行表示にし、収まらない場合は左方向へループスクロールして全文を見せる
+// (スクロールさせるのは再生中の動画のみ。一覧では再生中の行のタイトル・URLと、プレイヤー下の再生中タイトルが対象)
 const mobileQuery = window.matchMedia('(max-width: 600px)');
+
+// 要素がスクロール対象(再生中の動画の文字)かどうか
+function isPlayingMarquee(el) {
+  return el === nowPlayingEl || el.closest('.playlist-item.active') !== null;
+}
 
 // 要素1件分について、はみ出しているかを測ってスクロール表示の有無を切り替える
 function updateMarquee(el) {
@@ -386,11 +392,11 @@ function updateMarquee(el) {
     el.style.removeProperty('--marquee-duration');
     return;
   }
-  // はみ出しているかどうか(スマホ幅でなければスクロールしない)
+  // はみ出しているかどうか(スマホ幅でない場合や、再生中の動画でない場合はスクロールせず「…」で省略する)
   // 文字の幅はスクロール用の余白を除いた本来の幅で判定する
   el.classList.remove('is-marquee');
   const textWidth = text.offsetWidth;
-  const scrolling = mobileQuery.matches && textWidth - el.clientWidth > 1;
+  const scrolling = mobileQuery.matches && isPlayingMarquee(el) && textWidth - el.clientWidth > 1;
   el.classList.toggle('is-marquee', scrolling);
   if (scrolling) {
     // 1周の移動量(文字幅+間隔)に応じた所要時間(1秒あたり約40px、最低6秒)をCSSに渡す
@@ -678,8 +684,13 @@ function playVideo(listId, videoId, li) {
   setMarqueeText(nowPlayingEl, item.title);
 
   // 再生中の強調表示を付け替える(再描画しないのでフォーカスは保たれる)
-  accordionEl.querySelectorAll('.playlist-item.active').forEach((el) => el.classList.remove('active'));
+  // 前に再生していた行はスクロールを止め、新しく再生する行のタイトル・URLをスクロールさせる
+  accordionEl.querySelectorAll('.playlist-item.active').forEach((el) => {
+    el.classList.remove('active');
+    el.querySelectorAll('.marquee').forEach(updateMarquee);
+  });
   li.classList.add('active');
+  li.querySelectorAll('.marquee').forEach(updateMarquee);
 }
 
 // プレイヤーを初期状態(未選択)に戻す
