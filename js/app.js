@@ -374,7 +374,12 @@ const mobileQuery = window.matchMedia('(max-width: 600px)');
 // 要素1件分について、はみ出しているかを測ってスクロール表示の有無を切り替える
 function updateMarquee(el) {
   const text = el.querySelector('.marquee-text');
-  if (!text) return;
+  // 文字が消されている場合はスクロール表示を解除して終わる
+  if (!text) {
+    el.classList.remove('is-marquee');
+    el.style.removeProperty('--marquee-duration');
+    return;
+  }
   // はみ出しているかどうか(スマホ幅でなければスクロールしない)
   // 文字の幅はスクロール用の余白を除いた本来の幅で判定する
   el.classList.remove('is-marquee');
@@ -424,6 +429,8 @@ function setMarqueeText(el, value) {
   el.replaceChildren(track);
   // 表示幅の変化を監視し、収まらない場合だけスクロール表示にする
   marqueeObserver.observe(el);
+  // 表示中の要素の文字だけ差し替えた場合(再生中タイトルなど)は幅が変わらず監視が反応しないため、すぐ測る
+  if (el.isConnected) updateMarquee(el);
 }
 
 // 動画一覧の1行分の要素を作る
@@ -655,7 +662,8 @@ function playVideo(listId, videoId, li) {
   iframe.referrerPolicy = 'strict-origin-when-cross-origin';
 
   playerEl.replaceChildren(iframe);
-  nowPlayingEl.textContent = item.title;
+  // 再生中タイトルも、スマホ幅で収まらない場合は1行で自動スクロールさせる
+  setMarqueeText(nowPlayingEl, item.title);
 
   // 再生中の強調表示を付け替える(再描画しないのでフォーカスは保たれる)
   accordionEl.querySelectorAll('.playlist-item.active').forEach((el) => el.classList.remove('active'));
@@ -670,6 +678,8 @@ function clearPlayer() {
   p.textContent = '再生リストから動画を選択してください';
   playerEl.replaceChildren(p);
   nowPlayingEl.textContent = '';
+  // 文字を消したのでスクロール表示も解除する
+  updateMarquee(nowPlayingEl);
 }
 
 // ===== 動画の追加・削除 =====

@@ -256,6 +256,16 @@ body[data-player-size="large"] .player-area {
   word-break: break-word;
 }
 
+/* スマホ幅では再生中タイトルを1行表示にし、収まらない場合は自動スクロールさせる
+   (スクロールの仕組みは「文字の自動スクロール」の指定を共通で使う) */
+@media (max-width: 600px) {
+  .now-playing {
+    white-space: nowrap;
+    overflow: hidden;
+    word-break: normal;
+  }
+}
+
 /* ===== 再生リストのアコーディオン ===== */
 .accordion {
   display: flex;
