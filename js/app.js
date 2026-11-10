@@ -320,7 +320,13 @@ function createListElement(list) {
   urlInput.required = true;
   const addBtn = document.createElement('button');
   addBtn.type = 'submit';
-  addBtn.textContent = '追加';
+  addBtn.title = '追加';
+  addBtn.setAttribute('aria-label', '動画を追加');
+  // ＋アイコン(画面の他のアイコンと同じ線画スタイル)
+  addBtn.innerHTML = `
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
   form.append(urlInput, addBtn);
 
   // メッセージ表示欄(クリアボタンと横並びにする)
@@ -496,10 +502,16 @@ function createItemElement(listId, item) {
   const del = document.createElement('button');
   del.type = 'button';
   del.className = 'delete-btn';
-  del.textContent = '削除';
+  del.title = '削除';
   del.setAttribute('aria-label', `${item.title} を削除`);
+  // ×アイコン(画面の他のアイコンと同じ線画スタイル)
+  del.innerHTML = `
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
   // 再生リストの削除と同様に2回押しで削除する(行クリックでの再生はsetupTwoStepDelete内で止める)
-  setupTwoStepDelete(del, () => removeItem(listId, item.id));
+  // アイコンボタンなので、確認状態は赤色とツールチップで示す
+  setupTwoStepDelete(del, () => removeItem(listId, item.id), { iconOnly: true });
 
   // 並べ替え用のドラッグハンドル
   const handle = document.createElement('span');
@@ -756,9 +768,11 @@ const DELETE_CONFIRM_MS = 3000;
 //   1回目: ボタンを確認状態(赤色・「もう一度押して削除」)にする
 //   2回目: 確認状態のうちに押されたら onConfirm を実行する
 //   一定時間経過、またはフォーカスが外れたら元の状態に戻す
-function setupTwoStepDelete(button, onConfirm) {
+// iconOnly: アイコンボタンの場合はtrue(表示はアイコンのまま、赤色と説明文だけで確認状態を示す)
+function setupTwoStepDelete(button, onConfirm, { iconOnly = false } = {}) {
   const originalText = button.textContent;
   const originalLabel = button.getAttribute('aria-label');
+  const originalTitle = button.title;
   let timer = null;
 
   // 確認状態を解除して元の表示に戻す
@@ -766,7 +780,11 @@ function setupTwoStepDelete(button, onConfirm) {
     clearTimeout(timer);
     timer = null;
     button.classList.remove('confirming');
-    button.textContent = originalText;
+    if (iconOnly) {
+      button.title = originalTitle;
+    } else {
+      button.textContent = originalText;
+    }
     button.setAttribute('aria-label', originalLabel);
   };
 
@@ -780,7 +798,11 @@ function setupTwoStepDelete(button, onConfirm) {
     }
     // 1回目: 確認状態にして、一定時間後に自動で元に戻す
     button.classList.add('confirming');
-    button.textContent = 'もう一度押して削除';
+    if (iconOnly) {
+      button.title = 'もう一度押して削除';
+    } else {
+      button.textContent = 'もう一度押して削除';
+    }
     button.setAttribute('aria-label', `${originalLabel}(もう一度押すと削除されます)`);
     timer = setTimeout(reset, DELETE_CONFIRM_MS);
   });

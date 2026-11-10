@@ -548,8 +548,14 @@ button {
   font-size: 0.9rem;
 }
 
+/* 動画の追加ボタン(＋アイコンのみ。高さはURL入力欄に合わせて伸ばし、幅は正方形に近づける) */
 .add-form button {
-  padding: 8px 16px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  padding: 0;
   background: var(--accent);
   color: #fff;
 }
@@ -908,9 +914,15 @@ body.is-file-dragging::before {
   text-overflow: ellipsis;
 }
 
+/* 動画の削除ボタン(×アイコンのみの正方形ボタン) */
 .delete-btn {
   flex-shrink: 0;
-  padding: 6px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
   background: transparent;
   color: var(--muted);
   border: 1px solid var(--border);
