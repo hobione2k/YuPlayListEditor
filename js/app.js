@@ -491,10 +491,8 @@ function createItemElement(listId, item) {
   del.className = 'delete-btn';
   del.textContent = '削除';
   del.setAttribute('aria-label', `${item.title} を削除`);
-  del.addEventListener('click', (e) => {
-    e.stopPropagation(); // 行クリック(再生)を発火させない
-    removeItem(listId, item.id);
-  });
+  // 再生リストの削除と同様に2回押しで削除する(行クリックでの再生はsetupTwoStepDelete内で止める)
+  setupTwoStepDelete(del, () => removeItem(listId, item.id));
 
   // 並べ替え用のドラッグハンドル
   const handle = document.createElement('span');

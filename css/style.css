@@ -829,7 +829,9 @@ body.is-file-dragging::before {
     animation: none;
   }
 
-  .marquee.is-marquee .marquee-clone {
+  /* 上の指定で複製文字まで表示されないよう、画面幅に関係なく常に隠す
+     (スクロールしない設定なので複製は不要。これがないとデスクトップでタイトルが2重に表示される) */
+  .marquee .marquee-clone {
     display: none;
   }
 }
@@ -888,6 +890,14 @@ body.is-file-dragging::before {
   color: #fff;
   background: var(--accent);
   border-color: var(--accent);
+}
+
+/* 1回押した後の確認状態(赤色で「もう一度押して削除」と表示) */
+.delete-btn.confirming,
+.delete-btn.confirming:hover {
+  color: #fff;
+  background: #e5484d;
+  border-color: #e5484d;
 }
 
 .empty {
