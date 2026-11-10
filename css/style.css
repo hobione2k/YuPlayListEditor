@@ -126,6 +126,26 @@ body {
   color: var(--accent);
 }
 
+/* スマホ幅ではタイトルを左寄せにする
+   (2列構成「左: タイトル、右: ボタン群」に変え、左側の空き列をなくして幅を有効に使う) */
+@media (max-width: 600px) {
+  .app-header {
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+  }
+
+  .app-header h1 {
+    grid-column: 1;
+    grid-row: 1;
+    text-align: left;
+  }
+
+  .header-actions {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
+
 /* ===== フッター(パネル下部のリンク) ===== */
 .app-footer {
   display: flex;
