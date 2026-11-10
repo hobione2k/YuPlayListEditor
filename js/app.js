@@ -367,44 +367,64 @@ function applyOpenState(section, open) {
   section.querySelector('.acc-body').hidden = !open;
 }
 
-// ===== スマホ幅でのタイトル自動スクロール =====
-// スマホ幅ではタイトルを1行表示にし、収まらない場合は左右に自動スクロールして全文を見せる
+// ===== スマホ幅での文字の自動スクロール(タイトル・URL) =====
+// スマホ幅では文字を1行表示にし、収まらない場合は左方向へループスクロールして全文を見せる
 const mobileQuery = window.matchMedia('(max-width: 600px)');
 
-// タイトル1件分について、はみ出し量を測ってスクロール表示の有無を切り替える
-function updateTitleMarquee(title) {
-  const text = title.firstElementChild;
+// 要素1件分について、はみ出しているかを測ってスクロール表示の有無を切り替える
+function updateMarquee(el) {
+  const text = el.querySelector('.marquee-text');
   if (!text) return;
-  // はみ出している幅(px)。スマホ幅でなければ0扱い
-  const overflow = mobileQuery.matches ? text.scrollWidth - title.clientWidth : 0;
-  const scrolling = overflow > 1;
-  title.classList.toggle('is-marquee', scrolling);
+  // はみ出しているかどうか(スマホ幅でなければスクロールしない)
+  // 文字の幅はスクロール用の余白を除いた本来の幅で判定する
+  el.classList.remove('is-marquee');
+  const textWidth = text.offsetWidth;
+  const scrolling = mobileQuery.matches && textWidth - el.clientWidth > 1;
+  el.classList.toggle('is-marquee', scrolling);
   if (scrolling) {
-    // スクロール量と、文字数に応じた所要時間(1秒あたり約40px、最低6秒)をCSSに渡す
-    title.style.setProperty('--marquee-distance', `${-overflow}px`);
-    title.style.setProperty('--marquee-duration', `${Math.max(6, overflow / 40 + 4)}s`);
+    // 1周の移動量(文字幅+間隔)に応じた所要時間(1秒あたり約40px、最低6秒)をCSSに渡す
+    const loopWidth = text.offsetWidth; // 間隔の余白を含んだ幅
+    el.style.setProperty('--marquee-duration', `${Math.max(6, loopWidth / 40)}s`);
   } else {
-    title.style.removeProperty('--marquee-distance');
-    title.style.removeProperty('--marquee-duration');
+    el.style.removeProperty('--marquee-duration');
   }
 }
 
-// タイトル要素の幅が変わったとき(表示開始・画面回転・リスト開閉など)に測り直す
-const titleObserver = new ResizeObserver((entries) => {
+// 要素の幅が変わったとき(表示開始・画面回転・リスト開閉など)に測り直す
+const marqueeObserver = new ResizeObserver((entries) => {
   entries.forEach((entry) => {
     // 描き直しで画面から外れた要素は監視をやめる(メモリを解放するため)
     if (!entry.target.isConnected) {
-      titleObserver.unobserve(entry.target);
+      marqueeObserver.unobserve(entry.target);
       return;
     }
-    updateTitleMarquee(entry.target);
+    updateMarquee(entry.target);
   });
 });
 
-// スマホ幅とPC幅が切り替わったら、表示中の全タイトルを測り直す
+// スマホ幅とPC幅が切り替わったら、表示中の全要素を測り直す
 mobileQuery.addEventListener('change', () => {
-  document.querySelectorAll('.item-title').forEach(updateTitleMarquee);
+  document.querySelectorAll('.marquee').forEach(updateMarquee);
 });
+
+// 要素に、自動スクロールに対応した形で文字を設定する
+// (本文と、ループ表示用の複製を並べておき、複製はスクロール時のみCSSで表示する)
+function setMarqueeText(el, value) {
+  el.classList.add('marquee');
+  const track = document.createElement('span');
+  track.className = 'marquee-track';
+  const text = document.createElement('span');
+  text.className = 'marquee-text';
+  text.textContent = value;
+  const clone = document.createElement('span');
+  clone.className = 'marquee-text marquee-clone';
+  clone.textContent = value;
+  clone.setAttribute('aria-hidden', 'true'); // 読み上げが重複しないようにする
+  track.append(text, clone);
+  el.replaceChildren(track);
+  // 表示幅の変化を監視し、収まらない場合だけスクロール表示にする
+  marqueeObserver.observe(el);
+}
 
 // 動画一覧の1行分の要素を作る
 function createItemElement(listId, item) {
@@ -428,17 +448,13 @@ function createItemElement(listId, item) {
   const title = document.createElement('p');
   title.className = 'item-title';
   title.title = item.title;
-  // タイトル文字は内側のspanに入れる(スマホ幅で横スクロールのアニメーションをさせるため)
-  const titleText = document.createElement('span');
-  titleText.className = 'item-title-text';
-  titleText.textContent = item.title;
-  title.append(titleText);
-  // 表示幅の変化を監視し、収まらないタイトルだけスクロール表示にする
-  titleObserver.observe(title);
+  // スマホ幅で収まらない場合は自動スクロールさせる
+  setMarqueeText(title, item.title);
   const url = document.createElement('p');
   url.className = 'item-url';
-  url.textContent = item.url;
   url.title = item.url;
+  // URLもタイトルと同様に、スマホ幅で収まらない場合は自動スクロールさせる
+  setMarqueeText(url, item.url);
 
   // 再生方式(UnityPlayer/AVPro)の切り替えボタン
   // (YamaPlayer形式JSONの Mode として出力される)

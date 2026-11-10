@@ -757,45 +757,80 @@ body.is-file-dragging::before {
   overflow: hidden;
 }
 
-/* スマホ幅ではタイトルを1行表示にし、収まらない場合は自動で左右にスクロールさせる
-   (スクロール量・時間はapp.jsで --marquee-distance / --marquee-duration に設定) */
+/* ===== 文字の自動スクロール(タイトル・URL共通。app.jsのsetMarqueeTextで構成) ===== */
+/* ループ表示用の複製文字は、スクロール時以外は表示しない */
+.marquee-clone {
+  display: none;
+}
+
+/* スマホ幅では文字を1行表示にし、収まらない場合は自動で左方向へループスクロールさせる
+   (1周の所要時間はapp.jsで --marquee-duration に設定) */
 @media (max-width: 600px) {
   .item-title {
     display: block;
     white-space: nowrap;
   }
 
-  .item-title-text {
+  .marquee-track,
+  .marquee-text {
     display: inline-block;
   }
 
-  .item-title.is-marquee .item-title-text {
-    animation: title-marquee var(--marquee-duration, 8s) ease-in-out infinite alternate;
+  /* 複製文字はスクロール時以外は表示しない */
+  .marquee-clone {
+    display: none;
+  }
+
+  /* スクロール時は「…」の省略をやめ、本文と複製を間隔(右余白)付きで横に並べる */
+  .marquee.is-marquee {
+    text-overflow: clip;
+  }
+
+  .marquee.is-marquee .marquee-clone {
+    display: inline-block;
+  }
+
+  .marquee.is-marquee .marquee-text {
+    padding-right: 2.5em;
+  }
+
+  /* 本文と複製を並べた全体を半分(=1周分)だけ動かすと、複製が先頭位置に来て途切れずにつながる */
+  .marquee.is-marquee .marquee-track {
+    animation: marquee-scroll var(--marquee-duration, 8s) linear infinite;
   }
 }
 
-/* 先頭で少し止まってから末尾までスクロールし、末尾でも少し止まる(alternateで往復) */
-@keyframes title-marquee {
+/* 先頭で少し止まってから1周分スクロールし、先頭に戻って繰り返す */
+@keyframes marquee-scroll {
   0%,
-  15% {
+  20% {
     transform: translateX(0);
   }
 
-  85%,
   100% {
-    transform: translateX(var(--marquee-distance, 0));
+    transform: translateX(-50%);
   }
 }
 
 /* 動きを減らす設定の場合はスクロールせず、末尾を「…」で省略する */
 @media (prefers-reduced-motion: reduce) {
-  .item-title {
+  .marquee.is-marquee {
     text-overflow: ellipsis;
   }
 
-  .item-title.is-marquee .item-title-text {
+  /* 「…」が表示されるよう文字を通常の行内要素に戻し、スクロール用の余白も外す */
+  .marquee .marquee-track,
+  .marquee .marquee-text {
     display: inline;
+    padding-right: 0;
+  }
+
+  .marquee.is-marquee .marquee-track {
     animation: none;
+  }
+
+  .marquee.is-marquee .marquee-clone {
+    display: none;
   }
 }
 
