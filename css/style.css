@@ -102,6 +102,22 @@ body {
   border-color: var(--accent);
 }
 
+/* アイコンと文字の間隔 */
+.theme-toggle-label {
+  margin-left: 4px;
+}
+
+/* スマホ幅ではテーマ切り替えボタンをアイコンのみの表示にする */
+@media (max-width: 600px) {
+  .theme-toggle {
+    padding: 0 8px;
+  }
+
+  .theme-toggle-label {
+    display: none;
+  }
+}
+
 .app-header h1 {
   grid-column: 2;
   text-align: center;
@@ -403,6 +419,13 @@ body[data-player-size="large"] .player-area {
   color: var(--text);
   cursor: pointer;
   transition: border-color 0.15s, background-color 0.15s;
+}
+
+/* スマホ幅ではドラッグ&ドロップできないため、その案内文を隠して「クリックして読み込み」のみにする */
+@media (max-width: 600px) {
+  .drop-hint {
+    display: none;
+  }
 }
 
 /* マウスを乗せたとき・キーボードで選択したとき・ファイルをドラッグ中は枠をアクセント色にする */
@@ -712,6 +735,13 @@ body.is-file-dragging::before {
   background: #000;
 }
 
+/* スマホ幅ではサムネイルを小さくし、タイトル表示の幅を確保する */
+@media (max-width: 600px) {
+  .playlist-item img {
+    width: 72px;
+  }
+}
+
 .item-info {
   flex: 1;
   min-width: 0;
@@ -725,6 +755,48 @@ body.is-file-dragging::before {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* スマホ幅ではタイトルを1行表示にし、収まらない場合は自動で左右にスクロールさせる
+   (スクロール量・時間はapp.jsで --marquee-distance / --marquee-duration に設定) */
+@media (max-width: 600px) {
+  .item-title {
+    display: block;
+    white-space: nowrap;
+  }
+
+  .item-title-text {
+    display: inline-block;
+  }
+
+  .item-title.is-marquee .item-title-text {
+    animation: title-marquee var(--marquee-duration, 8s) ease-in-out infinite alternate;
+  }
+}
+
+/* 先頭で少し止まってから末尾までスクロールし、末尾でも少し止まる(alternateで往復) */
+@keyframes title-marquee {
+  0%,
+  15% {
+    transform: translateX(0);
+  }
+
+  85%,
+  100% {
+    transform: translateX(var(--marquee-distance, 0));
+  }
+}
+
+/* 動きを減らす設定の場合はスクロールせず、末尾を「…」で省略する */
+@media (prefers-reduced-motion: reduce) {
+  .item-title {
+    text-overflow: ellipsis;
+  }
+
+  .item-title.is-marquee .item-title-text {
+    display: inline;
+    animation: none;
+  }
 }
 
 /* 再生方式ボタンとURLを横に並べる行 */

@@ -37,7 +37,14 @@
     if (!button) return;
     const isDark = currentTheme() === 'dark';
     // 押したときに切り替わる先のテーマを表示する
-    button.textContent = isDark ? '☀ ライト' : '🌙 ダーク';
+    // アイコンと文字を分けて出力し、スマホ幅ではCSSで文字を隠してアイコンのみにする
+    const icon = document.createElement('span');
+    icon.className = 'theme-toggle-icon';
+    icon.textContent = isDark ? '☀' : '🌙';
+    const label = document.createElement('span');
+    label.className = 'theme-toggle-label';
+    label.textContent = isDark ? 'ライト' : 'ダーク';
+    button.replaceChildren(icon, label);
     button.setAttribute('aria-label', isDark ? 'ライトテーマに切り替え' : 'ダークテーマに切り替え');
   }
 

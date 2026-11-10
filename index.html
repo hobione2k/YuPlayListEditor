@@ -49,7 +49,8 @@
              ・クリック/Enterキーでファイル選択ダイアログを開く(labelで非表示のファイル選択欄と関連付け) -->
         <label class="drop-zone" id="drop-zone" for="import-file" tabindex="0">
           <a href="https://github.com/koorimizuw/YamaPlayer" target="_blank" rel="noopener noreferrer">YamaPlayer</a>
-          プレイリスト(json)をドラッグ&amp;ドロップまたはクリックして読み込み
+          <!-- ドラッグ&ドロップの案内はスマホ幅ではCSSで非表示にする -->
+          プレイリスト(json)を<span class="drop-hint">ドラッグ&amp;ドロップまたはクリックして</span>読み込む
         </label>
         <input type="file" id="import-file" accept=".json,application/json" hidden>
         <!-- エクスポートボタン(右側)。ファイル保存を表すダウンロードアイコンで表示する

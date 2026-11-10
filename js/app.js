@@ -367,6 +367,45 @@ function applyOpenState(section, open) {
   section.querySelector('.acc-body').hidden = !open;
 }
 
+// ===== スマホ幅でのタイトル自動スクロール =====
+// スマホ幅ではタイトルを1行表示にし、収まらない場合は左右に自動スクロールして全文を見せる
+const mobileQuery = window.matchMedia('(max-width: 600px)');
+
+// タイトル1件分について、はみ出し量を測ってスクロール表示の有無を切り替える
+function updateTitleMarquee(title) {
+  const text = title.firstElementChild;
+  if (!text) return;
+  // はみ出している幅(px)。スマホ幅でなければ0扱い
+  const overflow = mobileQuery.matches ? text.scrollWidth - title.clientWidth : 0;
+  const scrolling = overflow > 1;
+  title.classList.toggle('is-marquee', scrolling);
+  if (scrolling) {
+    // スクロール量と、文字数に応じた所要時間(1秒あたり約40px、最低6秒)をCSSに渡す
+    title.style.setProperty('--marquee-distance', `${-overflow}px`);
+    title.style.setProperty('--marquee-duration', `${Math.max(6, overflow / 40 + 4)}s`);
+  } else {
+    title.style.removeProperty('--marquee-distance');
+    title.style.removeProperty('--marquee-duration');
+  }
+}
+
+// タイトル要素の幅が変わったとき(表示開始・画面回転・リスト開閉など)に測り直す
+const titleObserver = new ResizeObserver((entries) => {
+  entries.forEach((entry) => {
+    // 描き直しで画面から外れた要素は監視をやめる(メモリを解放するため)
+    if (!entry.target.isConnected) {
+      titleObserver.unobserve(entry.target);
+      return;
+    }
+    updateTitleMarquee(entry.target);
+  });
+});
+
+// スマホ幅とPC幅が切り替わったら、表示中の全タイトルを測り直す
+mobileQuery.addEventListener('change', () => {
+  document.querySelectorAll('.item-title').forEach(updateTitleMarquee);
+});
+
 // 動画一覧の1行分の要素を作る
 function createItemElement(listId, item) {
   const li = document.createElement('li');
@@ -388,8 +427,14 @@ function createItemElement(listId, item) {
   info.className = 'item-info';
   const title = document.createElement('p');
   title.className = 'item-title';
-  title.textContent = item.title;
   title.title = item.title;
+  // タイトル文字は内側のspanに入れる(スマホ幅で横スクロールのアニメーションをさせるため)
+  const titleText = document.createElement('span');
+  titleText.className = 'item-title-text';
+  titleText.textContent = item.title;
+  title.append(titleText);
+  // 表示幅の変化を監視し、収まらないタイトルだけスクロール表示にする
+  titleObserver.observe(title);
   const url = document.createElement('p');
   url.className = 'item-url';
   url.textContent = item.url;
