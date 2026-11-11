@@ -5,8 +5,8 @@
 const STORAGE_KEY = 'yutplaylist.playlists';
 // 旧バージョン(再生リスト1つのみ)の保存キー(移行用)
 const LEGACY_STORAGE_KEY = 'yutplaylist.items';
-// 埋め込み再生に使うURL(プライバシー強化モード)
-const EMBED_BASE = 'https://www.youtube-nocookie.com/embed/';
+// 埋め込み再生に使うURL(通常のyoutube.com埋め込み)
+const EMBED_BASE = 'https://www.youtube.com/embed/';
 // タイトル取得に使うoEmbedのURL
 const OEMBED_BASE = 'https://www.youtube.com/oembed?format=json&url=';
 // 再生リスト名が空のときに使う名前

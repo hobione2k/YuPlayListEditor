@@ -36,7 +36,7 @@ CSP（Content-Security-Policy）で通信先を次のものに限定していま
 
 | 用途 | 通信先 |
 | --- | --- |
-| 動画の埋め込み再生（プライバシー強化モード） | `https://www.youtube-nocookie.com` |
+| 動画の埋め込み再生 | `https://www.youtube.com` |
 | サムネイル画像 | `https://i.ytimg.com` |
 | 動画タイトルの取得（oEmbed） | `https://www.youtube.com` |
 
