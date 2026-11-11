@@ -914,8 +914,8 @@ body.is-file-dragging::before {
   text-overflow: ellipsis;
 }
 
-/* 動画の削除ボタン(×アイコンのみの正方形ボタン) */
-.delete-btn {
+/* 動画のURLコピー・削除ボタン(アイコンのみの正方形ボタン) */
+.icon-btn {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
@@ -928,10 +928,23 @@ body.is-file-dragging::before {
   border: 1px solid var(--border);
 }
 
-.delete-btn:hover {
+.icon-btn:hover {
   color: #fff;
   background: var(--accent);
   border-color: var(--accent);
+}
+
+/* コピー直後(チェックアイコン表示中)は緑色にして成功を示す */
+.copy-btn.copied,
+.copy-btn.copied:hover {
+  color: #fff;
+  background: #30a46c;
+  border-color: #30a46c;
+}
+
+/* URLコピーボタンと削除ボタンの間隔を詰める */
+.copy-btn + .delete-btn {
+  margin-left: -4px;
 }
 
 /* 1回押した後の確認状態(赤色で「もう一度押して削除」と表示) */

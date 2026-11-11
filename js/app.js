@@ -504,10 +504,22 @@ function createItemElement(listId, item) {
   meta.append(mode, url);
   info.append(title, meta);
 
+  // URLコピーボタン
+  const copy = document.createElement('button');
+  copy.type = 'button';
+  copy.className = 'icon-btn copy-btn';
+  copy.title = 'URLをコピー';
+  copy.setAttribute('aria-label', `${item.title} のURLをコピー`);
+  copy.innerHTML = COPY_ICON;
+  copy.addEventListener('click', (e) => {
+    e.stopPropagation(); // 行クリック(再生)を発火させない
+    copyItemUrl(item.url, copy);
+  });
+
   // 削除ボタン
   const del = document.createElement('button');
   del.type = 'button';
-  del.className = 'delete-btn';
+  del.className = 'icon-btn delete-btn';
   del.title = '削除';
   del.setAttribute('aria-label', `${item.title} を削除`);
   // ×アイコン(画面の他のアイコンと同じ線画スタイル)
@@ -543,8 +555,68 @@ function createItemElement(listId, item) {
     }
   });
 
-  li.append(handle, img, info, del);
+  li.append(handle, img, info, copy, del);
   return li;
+}
+
+// ===== URLのコピー =====
+
+// コピーアイコン(重なった2枚の書類。画面の他のアイコンと同じ線画スタイル)
+const COPY_ICON = `
+  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+    <rect x="9" y="9" width="11" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M5 15V6a2 2 0 0 1 2-2h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+// コピー完了を示すチェックアイコン
+const COPIED_ICON = `
+  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+    <path d="M5 12l5 5L19 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+// コピー完了表示(チェックアイコン)を元に戻すまでの時間(ミリ秒)
+const COPIED_DISPLAY_MS = 1500;
+
+// 文字列をクリップボードへコピーする(成功すればtrue)
+// (Clipboard APIが使えない環境では、一時的なテキスト欄を使う旧方式で代用する)
+async function writeClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    // 旧方式: 画面外にテキスト欄を作り、選択してコピーする
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    let ok = false;
+    try {
+      ok = document.execCommand('copy');
+    } catch {
+      ok = false;
+    }
+    textarea.remove();
+    return ok;
+  }
+}
+
+// 動画のURLをコピーし、ボタンを一時的にチェックアイコンにして結果を知らせる
+async function copyItemUrl(url, button) {
+  const ok = await writeClipboard(url);
+  if (!ok) {
+    statusEl.textContent = 'URLをコピーできませんでした';
+    return;
+  }
+  statusEl.textContent = 'URLをコピーしました';
+  // 連続で押された場合は前の戻し処理を取り消す
+  clearTimeout(button._copiedTimer);
+  button.classList.add('copied');
+  button.innerHTML = COPIED_ICON;
+  button._copiedTimer = setTimeout(() => {
+    button.classList.remove('copied');
+    button.innerHTML = COPY_ICON;
+  }, COPIED_DISPLAY_MS);
 }
 
 // ===== 並べ替え =====
