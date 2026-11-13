@@ -302,7 +302,23 @@ function createListElement(list) {
   del.setAttribute('aria-label', `再生リスト「${list.name}」を削除`);
   setupTwoStepDelete(del, () => deleteList(list.id));
 
-  header.append(select, toggle, nameInput, count, del);
+  // 再生リスト自体の並べ替え用ドラッグハンドル
+  const handle = document.createElement('span');
+  handle.className = 'drag-handle';
+  handle.textContent = '⠿';
+  handle.title = 'ドラッグで再生リストを並べ替え(見出し上でAlt+↑↓キーでも移動可)';
+  handle.setAttribute('aria-hidden', 'true');
+  handle.addEventListener('pointerdown', (e) => startDrag(e, section, () => applyListOrder()));
+
+  // 見出し内(名前入力欄・開閉ボタンなど)でAlt+↑↓キーを押すと、再生リストを1つ上/下へ移動する
+  header.addEventListener('keydown', (e) => {
+    if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      e.preventDefault();
+      moveList(list.id, e.key === 'ArrowUp' ? -1 : 1);
+    }
+  });
+
+  header.append(handle, select, toggle, nameInput, count, del);
 
   // --- 本体部分(動画追加フォーム・動画一覧) ---
   const body = document.createElement('div');
@@ -537,7 +553,7 @@ function createItemElement(listId, item) {
   handle.textContent = '⠿';
   handle.title = 'ドラッグで並べ替え(Alt+↑↓キーでも移動可)';
   handle.setAttribute('aria-hidden', 'true');
-  handle.addEventListener('pointerdown', (e) => startDrag(e, listId, li));
+  handle.addEventListener('pointerdown', (e) => startDrag(e, li, () => applyItemOrder(listId, li.parentElement)));
   // ハンドル上のクリックで再生が始まらないようにする
   handle.addEventListener('click', (e) => e.stopPropagation());
 
@@ -623,10 +639,14 @@ async function copyItemUrl(url, button) {
 
 // ドラッグハンドルを押したときに並べ替えを開始する
 // (マウス・タッチ共通で動くようPointer Eventsで実装)
-function startDrag(e, listId, li) {
+//   li: ドラッグする要素(動画の行、または再生リストのアコーディオン)
+//   onDrop: ドラッグ終了時に呼ぶ処理(DOM上の並び順をデータへ反映する)
+function startDrag(e, li, onDrop) {
   if (e.button !== 0) return; // 左ボタン(タッチ含む)のみ
   e.preventDefault(); // テキスト選択などを防ぐ
+  e.stopPropagation(); // 動画の行のハンドルが、外側の再生リストのドラッグを起こさないようにする
 
+  // 並べ替えの範囲(ドラッグする要素の親要素の中で並べ替える)
   const ul = li.parentElement;
   const pointerId = e.pointerId;
   li.classList.add('dragging');
@@ -680,17 +700,51 @@ function startDrag(e, listId, li) {
       });
     }
 
-    const list = findList(listId);
-    if (!list) return;
-    const order = [...ul.children].map((el) => el.dataset.id);
-    list.items.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
-    savePlaylists();
+    // DOM上の並び順をデータに反映して保存する
+    onDrop();
   };
 
   // 行をDOM上で移動するとポインタキャプチャが外れるため、window全体でポインタを追跡する
   window.addEventListener('pointermove', onMove);
   window.addEventListener('pointerup', onEnd);
   window.addEventListener('pointercancel', onEnd);
+}
+
+// 動画一覧(ul)のDOM上の並び順を、再生リストの動画の順番に反映して保存する
+function applyItemOrder(listId, ul) {
+  const list = findList(listId);
+  if (!list || !ul) return;
+  const order = [...ul.children].map((el) => el.dataset.id);
+  list.items.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+  savePlaylists();
+}
+
+// アコーディオンのDOM上の並び順を、再生リスト一覧の順番に反映して保存する
+function applyListOrder() {
+  const order = [...accordionEl.children].map((el) => el.dataset.listId);
+  playlists.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+  savePlaylists();
+}
+
+// 再生リストを1つ上(-1)または下(+1)へ移動する(キーボード操作用)
+function moveList(listId, delta) {
+  const from = playlists.findIndex((p) => p.id === listId);
+  const to = from + delta;
+  if (from < 0 || to < 0 || to >= playlists.length) return;
+
+  // 配列内で入れ替えて保存する
+  [playlists[from], playlists[to]] = [playlists[to], playlists[from]];
+  savePlaylists();
+
+  // 操作中のリストは動かさず、隣のリストを反対側へ移動させる
+  // (フォーカス中の要素をDOMから外すとフォーカスが外れるため。他のリストの入力状態も保たれる)
+  const section = accordionEl.querySelector(`[data-list-id="${listId}"]`);
+  const neighbor = delta < 0 ? section?.previousElementSibling : section?.nextElementSibling;
+  if (!section || !neighbor) return;
+  animateReorder([...accordionEl.children], () => {
+    if (delta < 0) section.after(neighbor);
+    else section.before(neighbor);
+  });
 }
 
 // OSで「視差効果を減らす」が有効ならアニメーションを省略する
